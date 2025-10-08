@@ -1,4 +1,4 @@
-from gamelogic import run_game
+from terminal import run_game
 from graphical import GameGUI
 from validation import ask_choice, ask_yes_no, ask_int
 import os
@@ -46,7 +46,5 @@ def main():
         print("\nStarting CLI mode...")
         run_game(food_count=food_count, bomb_count=bomb_count, trial=trial)
   
-
-
 if __name__ == '__main__':
     main()

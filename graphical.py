@@ -84,7 +84,7 @@ class GameGUI:
         self.game_over = False
         self.game_over_message = ""
         self.victory = False
-        self.leaderboard_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "leaderboard.txt")
+        self.leaderboard_file = os.path.join(os.path.dirname(__file__), "leaderboard.txt")
         self.leaderboard = self.load_leaderboard()
         print(f"Loaded {len(self.leaderboard)} scores from {self.leaderboard_file}")
         self.player_name = None
