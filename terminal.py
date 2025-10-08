@@ -12,21 +12,13 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
     score = 0
 
     temp_empty_bombs = set()
-    food_queue, food_set = generate_food(snake, temp_empty_bombs, food_count)
+    food_set = generate_food(snake, temp_empty_bombs, food_count)
     bombs = generate_bombs(snake, food_set, bomb_count)
 
     board = [[' '] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
 
-    def add_food(pos):
-        food_queue.append(pos)
-        food_set.add(pos)
-
-    def remove_food(pos):
-        food_queue.remove(pos)
-        food_set.remove(pos)
-
     print("Initial Board:")
-    print_board(board, snake, food_queue, food_set, bombs, trial)
+    print_board(board, snake, food_set, bombs, trial)
 
     undo_stack = []
     MAX_UNDOS = 3
@@ -66,7 +58,7 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
             eaten_pos = (new_x, new_y)
             if not trial:
                 score += 10
-            remove_food(eaten_pos)
+            food_set.discard(eaten_pos)
 
             added = False
             while not added:
@@ -75,7 +67,7 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
                 pos = (fx, fy)
                 if pos in snake.positions or pos in food_set or pos in bombs:
                     continue
-                add_food(pos)
+                food_set.add(pos)
                 respawned_food = pos
                 added = True
         else:
@@ -91,69 +83,63 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
         undo_stack.append(('move', move_info))
         return True
 
-    try:
-        while True:
-            print(f"Score: {score} | Undos left: {remaining_undos}")
-            try:
-                k = readkey()
-            except KeyboardInterrupt:
-                print(f"{('You chose to quit. Final Score: ' + str(score)) if not trial else 'Have fun playing the real game!' }")
-                return score
+    while True:
+        print(f"Score: {score} | Undos left: {remaining_undos}")
+        try:
+            k = readkey()
+        except KeyboardInterrupt:
+            print(f"{('You chose to quit. Final Score: ' + str(score)) if not trial else 'Have fun playing the real game!' }")
+            return score
 
-            if (isinstance(k, str) and k.lower() == 'q'):
-                print(f"{('You chose to quit. Final Score: ' + str(score)) if not trial else 'Have fun playing the real game!' }")
-                return score
+        if (isinstance(k, str) and k.lower() == 'q'):
+            print(f"{('You chose to quit. Final Score: ' + str(score)) if not trial else 'Have fun playing the real game!' }")
+            return score
 
-            if (isinstance(k, str) and k.lower() == 'z'):
-                if remaining_undos <= 0:
-                    print("Oops! No more undos left.")
-                if not undo_stack:
-                    print("Nothing to undo yet.")
-                kind, info = undo_stack.pop()
-                if kind != 'move':
-                    print("Undo error occurred.")
-                removed_head = snake.remove_head()
-                if info.get('ate'):
-                    score -= 10
-                    eaten_pos = info.get('eaten_pos')
-                    respawned = info.get('respawned_food')
-                    if respawned is not None:
-                        try:
-                            if respawned in food_set:
-                                food_queue.remove(respawned)
-                                food_set.remove(respawned)
-                        except ValueError:
-                            pass
-                    if eaten_pos is not None:
-                        add_food(eaten_pos)
-                else:
-                    removed_tail = info.get('removed_tail')
-                    if removed_tail is not None:
-                        snake.append_tail(removed_tail)
-                remaining_undos -= 1
-                print(f"Undos remaining: {remaining_undos}")
+        if (isinstance(k, str) and k.lower() == 'z'):
+            if remaining_undos <= 0:
+                print("Oops! No more undos left.")
+                continue
+            if not undo_stack:
+                print("Nothing to undo yet.")
+                continue
+            kind, info = undo_stack.pop()
+            if kind != 'move':
+                print("Undo error occurred.")
+            removed_head = snake.remove_head()
+            if info.get('ate'):
+                score -= 10
+                eaten_pos = info.get('eaten_pos')
+                respawned = info.get('respawned_food')
+                if respawned is not None:
+                    food_set.discard(respawned)
+                if eaten_pos is not None:
+                    food_set.add(eaten_pos)
+            else:
+                removed_tail = info.get('removed_tail')
+                if removed_tail is not None:
+                    snake.append_tail(removed_tail)
+            remaining_undos -= 1
+            print(f"Undos remaining: {remaining_undos}")
 
-            mapping = {
-                UP: (0, -1),
-                DOWN: (0, 1),
-                LEFT: (-1, 0),
-                RIGHT: (1, 0),
-                'w': (0, -1),
-                's': (0, 1),
-                'a': (-1, 0),
-                'd': (1, 0),
-            }
-            if k in mapping:
-                dx, dy = mapping[k]
-                cont = _do_move(dx, dy)
-                if not cont:
-                    return score if not trial else -1
+        mapping = {
+            UP: (0, -1),
+            DOWN: (0, 1),
+            LEFT: (-1, 0),
+            RIGHT: (1, 0),
+            'w': (0, -1),
+            's': (0, 1),
+            'a': (-1, 0),
+            'd': (1, 0),
+        }
+        if k in mapping:
+            dx, dy = mapping[k]
+            cont = _do_move(dx, dy)
+            if not cont:
+                return score if not trial else -1
 
-            os.system('cls' if os.name == 'nt' else 'clear')
-            print_board(board, snake, food_queue, food_set, bombs, trial)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print_board(board, snake, food_set, bombs, trial)
 
-    finally:
-        pass
 
 file = os.path.join(os.path.dirname(__file__), "leaderboard.txt")
 

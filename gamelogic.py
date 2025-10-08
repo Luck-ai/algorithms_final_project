@@ -1,6 +1,5 @@
 import os
 import random
-from collections import deque
 from wcwidth import wcswidth
 
 BOARD_WIDTH = 10
@@ -124,20 +123,23 @@ def heapSort(arr):
     return arr
 
 def generate_food(snake, bombs, food_count=3):
-    food_queue = deque()
+    """Return a set of food positions. Use only a set for membership and iteration.
+
+    Returns:
+        set of (x, y) tuples
+    """
     food_set = set()
     snake_positions = snake.positions if hasattr(snake, 'positions') else set(snake.to_list())
 
-    while len(food_queue) < food_count:
+    while len(food_set) < food_count:
         fx = random.randint(0, BOARD_WIDTH - 1)
         fy = random.randint(0, BOARD_HEIGHT - 1)
         pos = (fx, fy)
         if pos in snake_positions or pos in food_set or pos in bombs:
             continue
-        food_queue.append(pos)
         food_set.add(pos)
 
-    return food_queue, food_set
+    return food_set
 
 def generate_bombs(snake, food_set, bomb_count=5):
     bombs = set()
@@ -161,12 +163,12 @@ def count_adjacent_bombs(x, y, bombs):
                 count += 1
     return count
 
-def print_board(board, snake, food_queue, food_set, bombs, trial=False):
+def print_board(board, snake, food_set, bombs, trial=False):
     display = [row.copy() for row in board]
     snake_list = snake.to_list()
     snake_set = snake.positions if hasattr(snake, 'positions') else set(snake_list)
 
-    for fx, fy in food_queue:
+    for fx, fy in food_set:
         display[fy][fx] = '🍎'
 
     if trial:

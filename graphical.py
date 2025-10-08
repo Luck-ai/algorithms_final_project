@@ -99,7 +99,7 @@ class GameGUI:
         self.snake.add_head(BOARD_WIDTH // 2, BOARD_HEIGHT // 2)
         self.score = 0
         temp_empty_bombs = set()
-        self.food_queue, self.food_set = generate_food(self.snake, temp_empty_bombs, self.food_count)
+        self.food_set = generate_food(self.snake, temp_empty_bombs, self.food_count)
         self.bombs = generate_bombs(self.snake, self.food_set, self.bomb_count)
         self.game_over = False
         self.game_over_message = ""
@@ -198,7 +198,7 @@ class GameGUI:
         if self.trial:
             for bx, by in self.bombs:
                 self.draw_bomb(bx, by, board_x, board_y)
-        for fx, fy in self.food_queue:
+        for fx, fy in self.food_set:
             self.draw_food(fx, fy, board_x, board_y)
         snake_list = self.snake.to_list()
         head_coords = self.snake.head_coordinates()
@@ -338,7 +338,7 @@ class GameGUI:
         y_offset += 40
         info_lines = [
             f"Snake Length: {self.snake.length}",
-            f"Food Left: {len(self.food_queue)}",
+            f"Food Left: {len(self.food_set)}",
             f"Total Bombs: {len(self.bombs)}",
         ]
         for line in info_lines:
@@ -518,15 +518,13 @@ class GameGUI:
             eaten_pos = (new_x, new_y)
             if not self.trial:
                 self.score += 10
-            self.food_queue.remove(eaten_pos)
-            self.food_set.remove(eaten_pos)
+            self.food_set.discard(eaten_pos)
             attempts = 0
             while attempts < 100:
                 fx = random.randint(0, BOARD_WIDTH - 1)
                 fy = random.randint(0, BOARD_HEIGHT - 1)
                 pos = (fx, fy)
                 if pos not in self.snake.positions and pos not in self.food_set and pos not in self.bombs:
-                    self.food_queue.append(pos)
                     self.food_set.add(pos)
                     respawned_food = pos
                     break
@@ -557,11 +555,9 @@ class GameGUI:
                 self.score -= 10
             respawned = info.get('respawned_food')
             if respawned and respawned in self.food_set:
-                self.food_queue.remove(respawned)
-                self.food_set.remove(respawned)
+                self.food_set.discard(respawned)
             eaten_pos = info.get('eaten_pos')
             if eaten_pos:
-                self.food_queue.append(eaten_pos)
                 self.food_set.add(eaten_pos)
         else:
             removed_tail = info.get('removed_tail')

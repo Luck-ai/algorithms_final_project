@@ -8,16 +8,15 @@ def ask_choice(prompt, choices=('1', '2'), default='1'):
             print(f"Please enter one of: {', '.join(choices)}")
 
 def ask_yes_no(prompt, default=False):
-        yes = {'y', 'yes'}
-        no = {'n', 'no'}
+
         suffix = ' [y/N]: ' if not default else ' [Y/n]: '
         while True:
             ans = input(prompt + suffix).strip().lower()
             if ans == '' and default is not None:
                 return default
-            if ans in yes:
+            if 'y' in ans.lower():
                 return True
-            if ans in no:
+            if 'n' in ans.lower():
                 return False
             print("Please answer 'y' or 'n'.")
 
