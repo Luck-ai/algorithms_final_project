@@ -1,5 +1,5 @@
 from terminal import run_game
-from graphical import GameGUI
+from graphicals import GameGUI
 from validation import ask_choice, ask_yes_no, ask_int
 import os
 
@@ -18,6 +18,7 @@ def main():
         " - Game over if you hit a wall, your own body, or a bomb.\n"
         " - Enable trial mode to see bomb positions for practice.\n"
         " - Scores are saved to the leaderboard after each round.\n"
+        " - Navigate using W/A/S/D or arrow keys, Q to quit and Z to undo.\n"
     )
 
     print(welcome)
@@ -27,22 +28,22 @@ def main():
 
     trial = ask_yes_no("Start a practice (trial) round?", default=False)
 
-    if not trial:
-        print("\nDifficulty settings — leave blank to use the default shown in [brackets].")
-        food_count = ask_int("How many food items?", default=3, min_value=1, max_value=100)
-        bomb_count = ask_int("How many bombs?", default=7, min_value=0, max_value=200)
-    else:
-        print("Practice mode: bombs will be visible during play.")
-        food_count = 3
-        bomb_count = 7
-
     if mode_choice == '2':
         print("\nStarting GUI mode...")
-        game = GameGUI(food_count=food_count, bomb_count=bomb_count, trial=trial)
+        game = GameGUI(food_count=3, bomb_count=7, trial=trial)
         final_score = game.run()
         print(f"\nFinal score: {final_score}\n")
 
     else:
+        if not trial:
+            print("\nDifficulty settings — leave blank to use the default shown in [brackets].")
+            food_count = ask_int("How many food items?", default=3, min_value=1, max_value=100)
+            bomb_count = ask_int("How many bombs?", default=7, min_value=0, max_value=200)
+        else:
+            print("Practice mode: bombs will be visible during play.")
+            food_count = 3
+            bomb_count = 7
+        
         print("\nStarting CLI mode...")
         run_game(food_count=food_count, bomb_count=bomb_count, trial=trial)
   

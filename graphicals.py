@@ -48,15 +48,15 @@ COLORS = {
 }
 
 DIRECTIONS = {
-        pygame.K_w: (0, -1),
-        pygame.K_UP: (0, -1),
-        pygame.K_s: (0, 1),
-        pygame.K_DOWN: (0, 1),
-        pygame.K_a: (-1, 0),
-        pygame.K_LEFT: (-1, 0),
-        pygame.K_d: (1, 0),
-        pygame.K_RIGHT: (1, 0),
-    }
+    pygame.K_w: (0, -1),
+    pygame.K_UP: (0, -1),
+    pygame.K_s: (0, 1),
+    pygame.K_DOWN: (0, 1),
+    pygame.K_a: (-1, 0),
+    pygame.K_LEFT: (-1, 0),
+    pygame.K_d: (1, 0),
+    pygame.K_RIGHT: (1, 0),
+}
 
 class GameGUI:
     def __init__(self, food_count=3, bomb_count=7, trial=False):
@@ -91,9 +91,15 @@ class GameGUI:
         self.show_name_input = False
         self.name_input_text = ""
         self.show_leaderboard_screen = False
+        self.show_trial_popup = False
+        self.show_settings_modal = not trial  
+        self.settings_field = 'food'
+        self.settings_food_text = str(food_count)
+        self.settings_bomb_text = str(bomb_count)
         self.reset_game()
         self.last_move_time = 0
         self.move_cooldown = 100
+
     def reset_game(self):
         self.snake = Snake()
         self.snake.add_head(BOARD_WIDTH // 2, BOARD_HEIGHT // 2)
@@ -108,8 +114,11 @@ class GameGUI:
         self.remaining_undos = self.MAX_UNDOS
         self.show_name_input = False
         self.name_input_text = ""
+        self.last_move_time = 0
+
     def draw_rounded_rect(self, surface, color, rect, radius=10):
         pygame.draw.rect(surface, color, rect, border_radius=radius)
+
     def draw_gradient_rect(self, surface, color1, color2, rect):
         for i in range(rect.height):
             ratio = i / rect.height
@@ -119,6 +128,7 @@ class GameGUI:
             pygame.draw.line(surface, (r, g, b), 
                            (rect.x, rect.y + i), 
                            (rect.x + rect.width, rect.y + i))
+
     def load_leaderboard(self):
         leaderboard = []
         try:
@@ -135,6 +145,7 @@ class GameGUI:
         except FileNotFoundError:
             leaderboard = []
         return leaderboard
+
     def save_score(self, name, score):
         print(f"Saving score: {name} - {score} to {self.leaderboard_file}")
         with open(self.leaderboard_file, 'a') as file:
@@ -142,9 +153,11 @@ class GameGUI:
         self.leaderboard.append([name, score])
         self.leaderboard = heapSort(self.leaderboard)
         print(f"Leaderboard now has {len(self.leaderboard)} entries")
+
     def get_top_leaderboard(self, count=5):
         sorted_board = heapSort(self.leaderboard.copy())
         return sorted_board[:count]
+
     def draw_header(self):
         header_rect = pygame.Rect(PADDING, PADDING, WINDOW_WIDTH - PADDING * 2, HEADER_HEIGHT)
         shadow_rect = header_rect.copy()
@@ -175,6 +188,7 @@ class GameGUI:
             trial_text = self.font_small.render("PRACTICE", True, COLORS['text'])
             trial_rect = trial_text.get_rect(center=trial_bg.center)
             self.screen.blit(trial_text, trial_rect)
+
     def draw_board(self):
         board_x = PADDING
         board_y = HEADER_HEIGHT + PADDING * 2
@@ -202,18 +216,56 @@ class GameGUI:
             self.draw_food(fx, fy, board_x, board_y)
         snake_list = self.snake.to_list()
         head_coords = self.snake.head_coordinates()
+        for i in range(len(snake_list) - 1):
+            self.draw_snake_connection(snake_list[i], snake_list[i + 1], board_x, board_y)
         for idx, (sx, sy) in enumerate(snake_list):
             is_head = (sx, sy) == head_coords
-            self.draw_snake_segment(sx, sy, board_x, board_y, is_head)
-        head_x, head_y = head_coords
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            nx, ny = head_x + dx, head_y + dy
-            if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
-                pos = (nx, ny)
-                if pos not in self.food_set and pos not in self.snake.positions:
-                    count = count_adjacent_bombs(nx, ny, self.bombs)
-                    self.draw_bomb_count(nx, ny, count, board_x, board_y)
-    def draw_snake_segment(self, x, y, offset_x, offset_y, is_head=False):
+            next_seg = snake_list[idx + 1] if idx + 1 < len(snake_list) else None
+            prev_seg = snake_list[idx - 1] if idx > 0 else None
+            self.draw_snake_segment(sx, sy, board_x, board_y, is_head, prev_seg, next_seg)
+        if not self.trial:
+            head_x, head_y = head_coords
+            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                nx, ny = head_x + dx, head_y + dy
+                if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
+                    pos = (nx, ny)
+                    if pos not in self.food_set and pos not in self.snake.positions:
+                        count = count_adjacent_bombs(nx, ny, self.bombs)
+                        self.draw_bomb_count(nx, ny, count, board_x, board_y)
+
+    def draw_snake_connection(self, seg1, seg2, offset_x, offset_y):
+        """Draw a connecting rectangle between two adjacent snake segments."""
+        x1, y1 = seg1
+        x2, y2 = seg2
+        
+        cell_x1 = offset_x + x1 * CELL_SIZE + CELL_SIZE // 2
+        cell_y1 = offset_y + y1 * CELL_SIZE + CELL_SIZE // 2
+        cell_x2 = offset_x + x2 * CELL_SIZE + CELL_SIZE // 2
+        cell_y2 = offset_y + y2 * CELL_SIZE + CELL_SIZE // 2
+        
+        width = 48
+        if x1 == x2:  
+            top_y = min(cell_y1, cell_y2)
+            bottom_y = max(cell_y1, cell_y2)
+            rect = pygame.Rect(cell_x1 - width // 2 + 2, top_y + 2, width, bottom_y - top_y)
+            pygame.draw.rect(self.screen, COLORS['shadow'], rect)
+        else:  
+            left_x = min(cell_x1, cell_x2)
+            right_x = max(cell_x1, cell_x2)
+            rect = pygame.Rect(left_x + 2, cell_y1 - width // 2 + 2, right_x - left_x, width)
+            pygame.draw.rect(self.screen, COLORS['shadow'], rect)
+        
+        if x1 == x2: 
+            top_y = min(cell_y1, cell_y2)
+            bottom_y = max(cell_y1, cell_y2)
+            rect = pygame.Rect(cell_x1 - width // 2, top_y, width, bottom_y - top_y)
+            pygame.draw.rect(self.screen, COLORS['snake_body'], rect)
+            left_x = min(cell_x1, cell_x2)
+            right_x = max(cell_x1, cell_x2)
+            rect = pygame.Rect(left_x, cell_y1 - width // 2, right_x - left_x, width)
+            pygame.draw.rect(self.screen, COLORS['snake_body'], rect)
+
+    def draw_snake_segment(self, x, y, offset_x, offset_y, is_head=False, prev_seg=None, next_seg=None):
         cell_x = offset_x + x * CELL_SIZE
         cell_y = offset_y + y * CELL_SIZE
         center_x = cell_x + CELL_SIZE // 2
@@ -238,6 +290,7 @@ class GameGUI:
             pygame.draw.circle(self.screen, COLORS['snake_body'], (center_x, center_y), radius)
             highlight_pos = (center_x - 6, center_y - 6)
             pygame.draw.circle(self.screen, (100, 255, 100), highlight_pos, 6)
+
     def draw_food(self, x, y, offset_x, offset_y):
         cell_x = offset_x + x * CELL_SIZE
         cell_y = offset_y + y * CELL_SIZE
@@ -256,6 +309,7 @@ class GameGUI:
             (center_x + 8, center_y - radius - 1),
         ]
         pygame.draw.polygon(self.screen, COLORS['food_stem'], leaf_points)
+
     def draw_bomb(self, x, y, offset_x, offset_y):
         cell_x = offset_x + x * CELL_SIZE
         cell_y = offset_y + y * CELL_SIZE
@@ -277,6 +331,7 @@ class GameGUI:
             pygame.draw.circle(self.screen, spark_colors[2], fuse_end, 2)
         highlight_pos = (center_x - 6, center_y - 6)
         pygame.draw.circle(self.screen, (80, 80, 90), highlight_pos, 5)
+
     def draw_bomb_count(self, x, y, count, offset_x, offset_y):
         cell_x = offset_x + x * CELL_SIZE
         cell_y = offset_y + y * CELL_SIZE
@@ -307,6 +362,7 @@ class GameGUI:
         text = self.font_medium.render(str(count), True, COLORS['text'])
         text_rect = text.get_rect(center=(center_x, center_y))
         self.screen.blit(text, text_rect)
+
     def draw_sidebar(self):
         sidebar_x = GAME_AREA_WIDTH + PADDING * 2
         sidebar_y = HEADER_HEIGHT + PADDING * 2
@@ -365,6 +421,7 @@ class GameGUI:
         y_offset += 10
         hint = self.font_tiny.render("Press L for full list", True, COLORS['text_dim'])
         self.screen.blit(hint, (sidebar_x + 20, y_offset))
+
     def draw_leaderboard_screen(self):
         self.screen.fill(COLORS['bg'])
         box_width = 600
@@ -427,7 +484,10 @@ class GameGUI:
         instruction = self.font_small.render("Press L to return to game  |  Press Q to quit", True, COLORS['text_dim'])
         instruction_rect = instruction.get_rect(center=(WINDOW_WIDTH // 2, box_x + box_height - 30))
         self.screen.blit(instruction, instruction_rect)
+
     def draw_game_over(self):
+        if getattr(self, 'show_trial_popup', False) or getattr(self, 'show_settings_modal', False):
+            return
         overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
         overlay.set_alpha(230)
         overlay.fill(COLORS['bg'])
@@ -480,6 +540,71 @@ class GameGUI:
             restart = self.font_small.render("Press R to Restart or Q to Quit", True, COLORS['text_dim'])
             restart_rect = restart.get_rect(center=(WINDOW_WIDTH // 2, box_y + 240))
             self.screen.blit(restart, restart_rect)
+
+    def draw_trial_popup(self):
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        overlay.set_alpha(220)
+        overlay.fill(COLORS['bg'])
+        self.screen.blit(overlay, (0, 0))
+        box_width = 480
+        box_height = 180
+        box_x = (WINDOW_WIDTH - box_width) // 2
+        box_y = (WINDOW_HEIGHT - box_height) // 2
+        box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+        self.draw_rounded_rect(self.screen, COLORS['header'], box_rect, 16)
+        pygame.draw.rect(self.screen, COLORS['accent'], box_rect, 3, border_radius=16)
+        title = self.font_large.render("Trial Over", True, COLORS['accent'])
+        title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, box_y + 36))
+        self.screen.blit(title, title_rect)
+        msg = "Ready for the full game?"
+        msg_surf = self.font_medium.render(msg, True, COLORS['text'])
+        msg_rect = msg_surf.get_rect(center=(WINDOW_WIDTH // 2, box_y + 80))
+        self.screen.blit(msg_surf, msg_rect)
+        instr = "ENTER = Settings & Play   |   ESC = Quit"
+        instr_surf = self.font_small.render(instr, True, COLORS['text_dim'])
+        instr_rect = instr_surf.get_rect(center=(WINDOW_WIDTH // 2, box_y + 125))
+        self.screen.blit(instr_surf, instr_rect)
+
+    def draw_settings_modal(self):
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        overlay.set_alpha(200)
+        overlay.fill(COLORS['bg'])
+        self.screen.blit(overlay, (0, 0))
+        w, h = 520, 220
+        x = (WINDOW_WIDTH - w) // 2
+        y = (WINDOW_HEIGHT - h) // 2
+        box = pygame.Rect(x, y, w, h)
+        self.draw_rounded_rect(self.screen, COLORS['header'], box, 14)
+        pygame.draw.rect(self.screen, COLORS['accent'], box, 3, border_radius=14)
+        title = self.font_medium.render("Full Game Settings", True, COLORS['accent'])
+        self.screen.blit(title, (x + 20, y + 12))
+        def clamp_display(text, font, max_w):
+            display = text
+            while display and font.size(display)[0] > max_w:
+                display = display[1:]
+            if display != text and display:
+                display = '…' + display
+            return display
+        food_label = self.font_medium.render("Food items:", True, COLORS['text'])
+        self.screen.blit(food_label, (x + 30, y + 58))
+        food_box = pygame.Rect(x + 260, y + 52, 220, 38)
+        color = COLORS['button_hover'] if self.settings_field == 'food' else COLORS['button']
+        self.draw_rounded_rect(self.screen, color, food_box, 10)
+        food_display = clamp_display(self.settings_food_text, self.font_medium, food_box.width - 20)
+        food_text_surf = self.font_medium.render(food_display, True, COLORS['text'])
+        self.screen.blit(food_text_surf, (food_box.x + 12, food_box.y + (food_box.height - food_text_surf.get_height()) // 2))
+        bomb_label = self.font_medium.render("Bombs:", True, COLORS['text'])
+        self.screen.blit(bomb_label, (x + 30, y + 108))
+        bomb_box = pygame.Rect(x + 260, y + 102, 220, 38)
+        color = COLORS['button_hover'] if self.settings_field == 'bomb' else COLORS['button']
+        self.draw_rounded_rect(self.screen, color, bomb_box, 10)
+        bomb_display = clamp_display(self.settings_bomb_text, self.font_medium, bomb_box.width - 20)
+        bomb_text_surf = self.font_medium.render(bomb_display, True, COLORS['text'])
+        self.screen.blit(bomb_text_surf, (bomb_box.x + 12, bomb_box.y + (bomb_box.height - bomb_text_surf.get_height()) // 2))
+        hint = self.font_small.render("ENTER = Start   |   ESC = Cancel", True, COLORS['text_dim'])
+        hint_rect = hint.get_rect(center=(x + w // 2, y + h - 18))
+        self.screen.blit(hint, hint_rect)
+
     def handle_move(self, direction):
         if self.game_over:
             return
@@ -493,19 +618,25 @@ class GameGUI:
         if new_x < 0 or new_x >= BOARD_WIDTH or new_y < 0 or new_y >= BOARD_HEIGHT:
             self.game_over = True
             self.game_over_message = "Hit the wall!"
-            if not self.trial:
+            if self.trial:
+                self.show_trial_popup = True
+            else:
                 self.show_name_input = True
             return
         if (new_x, new_y) in self.snake.positions:
             self.game_over = True
             self.game_over_message = "Ate yourself!"
-            if not self.trial:
+            if self.trial:
+                self.show_trial_popup = True
+            else:
                 self.show_name_input = True
             return
         if (new_x, new_y) in self.bombs:
             self.game_over = True
             self.game_over_message = "Hit a bomb!"
-            if not self.trial:
+            if self.trial:
+                self.show_trial_popup = True
+            else:
                 self.show_name_input = True
             return
         self.snake.add_head(new_x, new_y)
@@ -539,6 +670,7 @@ class GameGUI:
             'respawned_food': respawned_food,
         }
         self.undo_stack.append(('move', move_info))
+
     def handle_undo(self):
         if self.remaining_undos <= 0:
             print("No more undos available!")
@@ -564,12 +696,16 @@ class GameGUI:
             if removed_tail:
                 self.snake.append_tail(removed_tail)
         self.remaining_undos -= 1
+
     def run(self):
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    if self.trial and not self.show_trial_popup:
+                        self.show_trial_popup = True
+                    else:
+                        running = False
                 elif event.type == pygame.KEYDOWN:
                     if self.show_name_input:
                         if event.key == pygame.K_RETURN:
@@ -583,7 +719,61 @@ class GameGUI:
                         elif len(self.name_input_text) < 20 and event.unicode.isprintable():
                             self.name_input_text += event.unicode
                     else:
+                        if self.show_trial_popup:
+                            if event.key == pygame.K_RETURN:
+                                print('[DEBUG] Trial popup: ENTER pressed -> opening settings modal')
+                                self.show_trial_popup = False
+                                self.show_settings_modal = True
+                                self.settings_field = 'food'
+                                self.settings_food_text = str(self.food_count)
+                                self.settings_bomb_text = str(self.bomb_count)
+                            elif event.key == pygame.K_ESCAPE:
+                                print('[DEBUG] Trial popup: ESC pressed -> quitting')
+                                self.show_trial_popup = False
+                                running = False
+                            continue
+                        if self.show_settings_modal:
+                            if event.key == pygame.K_ESCAPE:
+                                self.show_settings_modal = False
+                                running = False
+                                continue
+                            if event.key == pygame.K_TAB:
+                                self.settings_field = 'bomb' if self.settings_field == 'food' else 'food'
+                                continue
+                            if event.key == pygame.K_BACKSPACE:
+                                if self.settings_field == 'food':
+                                    self.settings_food_text = self.settings_food_text[:-1]
+                                else:
+                                    self.settings_bomb_text = self.settings_bomb_text[:-1]
+                                continue
+                            if event.key == pygame.K_RETURN:
+                                try:
+                                    f = int(self.settings_food_text) if self.settings_food_text.strip() else self.food_count
+                                except ValueError:
+                                    f = self.food_count
+                                try:
+                                    b = int(self.settings_bomb_text) if self.settings_bomb_text.strip() else self.bomb_count
+                                except ValueError:
+                                    b = self.bomb_count
+                                f = max(1, min(100, f))
+                                b = max(0, min(200, b))
+                                print(f'[DEBUG] Applying settings: food={f}, bombs={b} -> switching to full game')
+                                self.food_count = f
+                                self.bomb_count = b
+                                self.trial = False
+                                self.show_settings_modal = False
+                                self.reset_game()
+                                continue
+                            if event.unicode.isdigit():
+                                if self.settings_field == 'food':
+                                    self.settings_food_text += event.unicode
+                                else:
+                                    self.settings_bomb_text += event.unicode
+                            continue
                         if event.key == pygame.K_q or event.key == pygame.K_ESCAPE:
+                            if self.trial and not self.show_trial_popup:
+                                self.show_trial_popup = True
+                                continue
                             running = False
                         elif event.key == pygame.K_l:
                             self.show_leaderboard_screen = not self.show_leaderboard_screen
@@ -600,7 +790,11 @@ class GameGUI:
                 self.draw_header()
                 self.draw_board()
                 self.draw_sidebar()
-                if self.game_over:
+                if self.show_trial_popup:
+                    self.draw_trial_popup()
+                elif self.show_settings_modal:
+                    self.draw_settings_modal()
+                elif self.game_over:
                     self.draw_game_over()
             pygame.display.flip()
             self.clock.tick(60)

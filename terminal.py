@@ -1,5 +1,5 @@
 from gamelogic import Snake, generate_food, generate_bombs,print_board, heapSort, BOARD_WIDTH, BOARD_HEIGHT
-from validation import ask_yes_no
+from validation import ask_yes_no, ask_int
 
 import os
 import random
@@ -171,11 +171,24 @@ def _save_score(name, score, file_path=None):
 def run_game(food_count=3, bomb_count=5, trial=False):
     leaderboard_sorted = []
     while True:
-        name = input("Enter your name for the leaderboard (or leave blank for 'Anonymous'): ").strip()
-        if not name:
-            name = 'Anonymous'
+        if not trial:
+            name = input("Enter your name for the leaderboard (or leave blank for 'Anonymous'): ").strip()
+            if not name:
+                name = 'Anonymous'
 
         score = _game_loop(food_count, bomb_count, trial=trial)
+        if trial and score == -1:
+            play_real = ask_yes_no("Practice round ended — start the full game now?", default=True)
+            if play_real:
+                print("\nEnter settings for the full game (press Enter to keep current values):\n")
+                food_count = ask_int("How many food items?", default=food_count, min_value=1, max_value=100)
+                bomb_count = ask_int("How many bombs?", default=bomb_count, min_value=0, max_value=200)
+                trial = False
+                continue
+            else:
+                print("\nThanks for trying the practice round!\n")
+                break
+
         if score != -1:
             _save_score(name, score)
             leaderboard_sorted = heapSort(_load_leaderboard())[:5]

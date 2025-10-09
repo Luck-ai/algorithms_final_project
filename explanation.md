@@ -2,11 +2,11 @@
 
 - `gamelogic.py` — Contains the main logic of the game. Includes `Node`/`Snake`, `generate_food`, `generate_bombs`, `count_adjacent_bombs`, `heapSort`, and board constants.
 - `terminal.py` — CLI game loop, board rendering and printing, undo handling, leaderboard I/O.
-- `graphical.py` — Pygame-based GUI, event loop, graphical rendering, undo handling, save score UI.
+- `graphicals.py` — Pygame-based GUI, event loop, graphical rendering, undo handling, save score UI.
 - `validation.py` — input helpers and validators used by the CLI/UI.
 
 ## Project algorithms and data structures
-This project implements a Snake-like game. The main Python modules containing the logic are `gamelogic.py`, `terminal.py`, `graphical.py`, and `validation.py`. The sections below summarize the core algorithms and data structures used, where they appear in the code, and how operations (searching, sorting, adding, deleting) are implemented.
+This project implements a Snake-like game. The main Python modules containing the logic are `gamelogic.py`, `terminal.py`, `graphicals.py`, and `validation.py`. The sections below summarize the core algorithms and data structures used, where they appear in the code, and how operations (searching, sorting, adding, deleting) are implemented.
 
 ### Key data structures
 
