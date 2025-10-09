@@ -123,11 +123,7 @@ def heapSort(arr):
     return arr
 
 def generate_food(snake, bombs, food_count=3):
-    """Return a set of food positions. Use only a set for membership and iteration.
 
-    Returns:
-        set of (x, y) tuples
-    """
     food_set = set()
     snake_positions = snake.positions if hasattr(snake, 'positions') else set(snake.to_list())
 
