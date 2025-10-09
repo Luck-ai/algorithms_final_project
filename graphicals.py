@@ -223,15 +223,14 @@ class GameGUI:
             next_seg = snake_list[idx + 1] if idx + 1 < len(snake_list) else None
             prev_seg = snake_list[idx - 1] if idx > 0 else None
             self.draw_snake_segment(sx, sy, board_x, board_y, is_head, prev_seg, next_seg)
-        if not self.trial:
-            head_x, head_y = head_coords
-            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-                nx, ny = head_x + dx, head_y + dy
-                if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
-                    pos = (nx, ny)
-                    if pos not in self.food_set and pos not in self.snake.positions:
-                        count = count_adjacent_bombs(nx, ny, self.bombs)
-                        self.draw_bomb_count(nx, ny, count, board_x, board_y)
+        head_x, head_y = head_coords
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+            nx, ny = head_x + dx, head_y + dy
+            if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
+                pos = (nx, ny)
+                if pos not in self.food_set and pos not in self.snake.positions and pos not in self.bombs:
+                    count = count_adjacent_bombs(nx, ny, self.bombs)
+                    self.draw_bomb_count(nx, ny, count, board_x, board_y)
 
     def draw_snake_connection(self, seg1, seg2, offset_x, offset_y):
         """Draw a connecting rectangle between two adjacent snake segments."""
@@ -601,9 +600,20 @@ class GameGUI:
         bomb_display = clamp_display(self.settings_bomb_text, self.font_medium, bomb_box.width - 20)
         bomb_text_surf = self.font_medium.render(bomb_display, True, COLORS['text'])
         self.screen.blit(bomb_text_surf, (bomb_box.x + 12, bomb_box.y + (bomb_box.height - bomb_text_surf.get_height()) // 2))
-        hint = self.font_small.render("ENTER = Start   |   ESC = Cancel", True, COLORS['text_dim'])
+        hint = self.font_small.render("Click Field to Edit   |   ENTER = Start   |   ESC = Cancel", True, COLORS['text_dim'])
         hint_rect = hint.get_rect(center=(x + w // 2, y + h - 18))
         self.screen.blit(hint, hint_rect)
+        
+        cursor_time = pygame.time.get_ticks() % 1000
+        if cursor_time < 500:  
+            if self.settings_field == 'food':
+                cursor_x = food_box.x + 12 + self.font_medium.size(food_display)[0]
+                cursor_y = food_box.y + 8
+                pygame.draw.line(self.screen, COLORS['accent'], (cursor_x, cursor_y), (cursor_x, cursor_y + 22), 2)
+            else:
+                cursor_x = bomb_box.x + 12 + self.font_medium.size(bomb_display)[0]
+                cursor_y = bomb_box.y + 8
+                pygame.draw.line(self.screen, COLORS['accent'], (cursor_x, cursor_y), (cursor_x, cursor_y + 22), 2)
 
     def handle_move(self, direction):
         if self.game_over:
@@ -706,6 +716,18 @@ class GameGUI:
                         self.show_trial_popup = True
                     else:
                         running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.show_settings_modal and event.button == 1:  
+                        w, h = 520, 220
+                        x = (WINDOW_WIDTH - w) // 2
+                        y = (WINDOW_HEIGHT - h) // 2
+                        food_box = pygame.Rect(x + 260, y + 52, 220, 38)
+                        bomb_box = pygame.Rect(x + 260, y + 102, 220, 38)
+                        
+                        if food_box.collidepoint(event.pos):
+                            self.settings_field = 'food'
+                        elif bomb_box.collidepoint(event.pos):
+                            self.settings_field = 'bomb'
                 elif event.type == pygame.KEYDOWN:
                     if self.show_name_input:
                         if event.key == pygame.K_RETURN:
@@ -736,9 +758,6 @@ class GameGUI:
                             if event.key == pygame.K_ESCAPE:
                                 self.show_settings_modal = False
                                 running = False
-                                continue
-                            if event.key == pygame.K_TAB:
-                                self.settings_field = 'bomb' if self.settings_field == 'food' else 'food'
                                 continue
                             if event.key == pygame.K_BACKSPACE:
                                 if self.settings_field == 'food':
