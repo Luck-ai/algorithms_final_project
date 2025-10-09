@@ -12,7 +12,7 @@ def main():
 
     rules = (
         "\nRules:\n"
-        " - Collect an apple (🍎) to gain +10 points and grow longer.\n"
+        " - Collect food (🍎) to gain +10 points and grow longer.\n"
         " - Avoid bombs (💣): touching one ends the game immediately.\n"
         " - Numbers shown near the head indicate adjacent bombs (including diagonals).\n"
         " - Game over if you hit a wall, your own body, or a bomb.\n"
