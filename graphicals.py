@@ -144,12 +144,10 @@ class GameGUI:
         return leaderboard
 
     def save_score(self, name, score):
-        print(f"Saving score: {name} - {score} to {self.leaderboard_file}")
         with open(self.leaderboard_file, 'a') as file:
             file.write(f"{name}:{score}\n")
         self.leaderboard.append([name, score])
         self.leaderboard = heapSort(self.leaderboard)
-        print(f"Leaderboard now has {len(self.leaderboard)} entries")
 
     def get_top_leaderboard(self, count=5):
         sorted_board = heapSort(self.leaderboard.copy())
@@ -230,7 +228,6 @@ class GameGUI:
                     self.draw_bomb_count(nx, ny, count, board_x, board_y)
 
     def draw_snake_connection(self, seg1, seg2, offset_x, offset_y):
-        """Draw a connecting rectangle between two adjacent snake segments."""
         x1, y1 = seg1
         x2, y2 = seg2
         

@@ -10,13 +10,15 @@ def ask_choice(prompt, choices=('1', '2'), default='1'):
 def ask_yes_no(prompt, default=False):
 
         suffix = ' [y/N]: ' if not default else ' [Y/n]: '
+        whitelist_yes = {'y', 'yes',}
+        whitelist_no = {'n', 'no'}
         while True:
             ans = input(prompt + suffix).strip().lower()
             if ans == '' and default is not None:
                 return default
-            if 'y' in ans.lower():
+            if ans in whitelist_yes:
                 return True
-            if 'n' in ans.lower():
+            if ans in whitelist_no:
                 return False
             print("Please answer 'y' or 'n'.")
 
