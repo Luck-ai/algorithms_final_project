@@ -734,20 +734,17 @@ class GameGUI:
                     else:
                         if self.show_trial_popup:
                             if event.key == pygame.K_RETURN:
-                                print('[DEBUG] Trial popup: ENTER pressed -> opening settings modal')
                                 self.show_trial_popup = False
                                 self.show_settings_modal = True
                                 self.settings_field = 'food'
                                 self.settings_food_text = str(self.food_count)
                                 self.settings_bomb_text = str(self.bomb_count)
                             elif event.key == pygame.K_ESCAPE:
-                                print('[DEBUG] Trial popup: ESC pressed -> quitting')
                                 self.show_trial_popup = False
                                 running = False
                             continue
                         if self.show_settings_modal:
                             if event.key == pygame.K_ESCAPE:
-                                # Close settings modal instead of quitting the whole game
                                 self.show_settings_modal = False
                                 continue
                             if event.key == pygame.K_BACKSPACE:
@@ -767,7 +764,6 @@ class GameGUI:
                                     b = self.bomb_count
                                 f = max(1, min(100, f))
                                 b = max(0, min(200, b))
-                                print(f'[DEBUG] Applying settings: food={f}, bombs={b} -> switching to full game')
                                 self.food_count = f
                                 self.bomb_count = b
                                 self.trial = False
