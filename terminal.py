@@ -1,4 +1,4 @@
-from gamelogic import Snake, generate_food, generate_bombs,print_board, heapSort, BOARD_WIDTH, BOARD_HEIGHT
+from gamelogic import Snake, generate_food, generate_bombs,print_board, heapSort, BOARD_WIDTH, BOARD_HEIGHT, random_free_position
 from validation import ask_yes_no, ask_int
 
 import os
@@ -56,20 +56,15 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
         if (new_x, new_y) in food_set:
             ate = True
             eaten_pos = (new_x, new_y)
+            food_set.discard(eaten_pos)         
             if not trial:
                 score += 10
-            food_set.discard(eaten_pos)
-
-            added = False
-            while not added:
-                fx = random.randint(0, BOARD_WIDTH - 1)
-                fy = random.randint(0, BOARD_HEIGHT - 1)
-                pos = (fx, fy)
-                if pos in snake.positions or pos in food_set or pos in bombs:
-                    continue
+            pos = random_free_position(snake.positions, food_set, bombs, BOARD_WIDTH, BOARD_HEIGHT)
+            if pos is not None:
                 food_set.add(pos)
                 respawned_food = pos
-                added = True
+            else:
+                respawned_food = None
         else:
             removed_tail = snake.remove_tail()
 
@@ -107,7 +102,8 @@ def _game_loop(food_count=3, bomb_count=5, trial=False):
                 print("Undo error occurred.")
             removed_head = snake.remove_head()
             if info.get('ate'):
-                score -= 10
+                if not trial:
+                    score -= 10
                 eaten_pos = info.get('eaten_pos')
                 respawned = info.get('respawned_food')
                 if respawned is not None:

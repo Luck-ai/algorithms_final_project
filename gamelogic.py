@@ -3,7 +3,7 @@ import random
 from wcwidth import wcswidth
 
 BOARD_WIDTH = 10
-BOARD_HEIGHT = 7
+BOARD_HEIGHT = 8
 
 class Node:
     def __init__(self, x, y):
@@ -122,34 +122,36 @@ def heapSort(arr):
     arr.reverse()
     return arr
 
+def list_free_positions(snake_positions, food_set, bombs, board_w, board_h):
+    occupied = set(snake_positions) | set(food_set) | set(bombs)
+    return [
+        (x, y)
+        for y in range(board_h)
+        for x in range(board_w)
+        if (x, y) not in occupied
+    ]
+
+def random_free_position(snake_positions, food_set, bombs, board_w, board_h):
+    free = list_free_positions(snake_positions, food_set, bombs, board_w, board_h)
+    if not free:
+        return None
+    return random.choice(free)
+
 def generate_food(snake, bombs, food_count=3):
-
-    food_set = set()
     snake_positions = snake.positions if hasattr(snake, 'positions') else set(snake.to_list())
-
-    while len(food_set) < food_count:
-        fx = random.randint(0, BOARD_WIDTH - 1)
-        fy = random.randint(0, BOARD_HEIGHT - 1)
-        pos = (fx, fy)
-        if pos in snake_positions or pos in food_set or pos in bombs:
-            continue
-        food_set.add(pos)
-
-    return food_set
+    free = list_free_positions(snake_positions, set(), bombs, BOARD_WIDTH, BOARD_HEIGHT)
+    k = min(food_count, len(free))
+    if k == 0:
+        return set()
+    return set(random.sample(free, k))
 
 def generate_bombs(snake, food_set, bomb_count=5):
-    bombs = set()
     snake_positions = snake.positions if hasattr(snake, 'positions') else set(snake.to_list())
-
-    while len(bombs) < bomb_count:
-        bx = random.randint(0, BOARD_WIDTH - 1)
-        by = random.randint(0, BOARD_HEIGHT - 1)
-        pos = (bx, by)
-        if pos in snake_positions or pos in food_set or pos in bombs:
-            continue
-        bombs.add(pos)
-
-    return bombs
+    free = list_free_positions(snake_positions, food_set, set(), BOARD_WIDTH, BOARD_HEIGHT)
+    k = min(bomb_count, len(free))
+    if k == 0:
+        return set()
+    return set(random.sample(free, k))
 
 def count_adjacent_bombs(x, y, bombs):
     count = 0

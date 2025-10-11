@@ -2,14 +2,11 @@ import os
 os.environ.setdefault('PYGAME_HIDE_SUPPORT_PROMPT', '1')
 import pygame
 import random
-from gamelogic import Snake, generate_food, generate_bombs, count_adjacent_bombs, heapSort
+from gamelogic import Snake, generate_food, generate_bombs, count_adjacent_bombs, heapSort, BOARD_WIDTH, BOARD_HEIGHT, random_free_position
 
 pygame.init()
 pygame.mixer.init()
 
-
-BOARD_WIDTH = 10
-BOARD_HEIGHT = 8
 CELL_SIZE = 70
 SIDEBAR_WIDTH = 380
 HEADER_HEIGHT = 140
@@ -481,7 +478,7 @@ class GameGUI:
             play_rect = play_msg.get_rect(center=(WINDOW_WIDTH // 2, box_y + 340))
             self.screen.blit(play_msg, play_rect)
         instruction = self.font_small.render("Press L to return to game  |  Press Q to quit", True, COLORS['text_dim'])
-        instruction_rect = instruction.get_rect(center=(WINDOW_WIDTH // 2, box_x + box_height - 30))
+        instruction_rect = instruction.get_rect(center=(WINDOW_WIDTH // 2, box_y + box_height - 30))
         self.screen.blit(instruction, instruction_rect)
 
     def draw_game_over(self):
@@ -660,16 +657,10 @@ class GameGUI:
             if not self.trial:
                 self.score += 10
             self.food_set.discard(eaten_pos)
-            attempts = 0
-            while attempts < 100:
-                fx = random.randint(0, BOARD_WIDTH - 1)
-                fy = random.randint(0, BOARD_HEIGHT - 1)
-                pos = (fx, fy)
-                if pos not in self.snake.positions and pos not in self.food_set and pos not in self.bombs:
-                    self.food_set.add(pos)
-                    respawned_food = pos
-                    break
-                attempts += 1
+            pos = random_free_position(self.snake.positions, self.food_set, self.bombs, BOARD_WIDTH, BOARD_HEIGHT)
+            if pos is not None:
+                self.food_set.add(pos)
+                respawned_food = pos
         else:
             removed_tail = self.snake.remove_tail()
         move_info = {
@@ -756,8 +747,8 @@ class GameGUI:
                             continue
                         if self.show_settings_modal:
                             if event.key == pygame.K_ESCAPE:
+                                # Close settings modal instead of quitting the whole game
                                 self.show_settings_modal = False
-                                running = False
                                 continue
                             if event.key == pygame.K_BACKSPACE:
                                 if self.settings_field == 'food':
