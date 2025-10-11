@@ -61,7 +61,7 @@ DIRECTIONS = {
 class GameGUI:
     def __init__(self, food_count=3, bomb_count=7, trial=False):
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption("🐍💣 SnakeSweeper")
+        pygame.display.set_caption("SnakeSweeper")
         try:
             icon = pygame.Surface((32, 32))
             icon.fill(COLORS['snake_head'])
@@ -228,7 +228,7 @@ class GameGUI:
             nx, ny = head_x + dx, head_y + dy
             if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
                 pos = (nx, ny)
-                if pos not in self.food_set and pos not in self.snake.positions and pos not in self.bombs:
+                if pos not in self.food_set and pos not in self.snake.positions:
                     count = count_adjacent_bombs(nx, ny, self.bombs)
                     self.draw_bomb_count(nx, ny, count, board_x, board_y)
 
@@ -432,7 +432,7 @@ class GameGUI:
         box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
         self.draw_rounded_rect(self.screen, COLORS['header'], box_rect, 20)
         pygame.draw.rect(self.screen, COLORS['accent'], box_rect, 4, border_radius=20)
-        title = self.font_large.render("🏆 LEADERBOARD 🏆", True, COLORS['accent'])
+        title = self.font_large.render("LEADERBOARD", True, COLORS['accent'])
         title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, box_y + 50))
         self.screen.blit(title, title_rect)
         divider_y = box_y + 90
@@ -454,13 +454,13 @@ class GameGUI:
                     row_rect = pygame.Rect(box_x + 30, y_offset - 8, box_width - 60, 40)
                     self.draw_rounded_rect(self.screen, COLORS['button'], row_rect, 8)
                 if i == 1:
-                    rank_text = "🥇"
+                    rank_text = "1."
                     text_color = COLORS['accent']
                 elif i == 2:
-                    rank_text = "🥈"
+                    rank_text = "2."
                     text_color = COLORS['text']
                 elif i == 3:
-                    rank_text = "🥉"
+                    rank_text = "3."
                     text_color = COLORS['text']
                 else:
                     rank_text = f"{i}."
@@ -526,7 +526,7 @@ class GameGUI:
             self.draw_rounded_rect(self.screen, COLORS['header'], box_rect, 20)
             pygame.draw.rect(self.screen, COLORS['accent'], box_rect, 4, border_radius=20)
             title_color = COLORS['success'] if self.victory else COLORS['danger']
-            title_text = "Victory! 🎉" if self.victory else "Game Over! 💀"
+            title_text = "Victory!" if self.victory else "Game Over!"
             title = self.font_large.render(title_text, True, title_color)
             title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, box_y + 60))
             self.screen.blit(title, title_rect)
@@ -731,8 +731,8 @@ class GameGUI:
                 elif event.type == pygame.KEYDOWN:
                     if self.show_name_input:
                         if event.key == pygame.K_RETURN:
-                            if self.name_input_text.strip():
-                                self.save_score(self.name_input_text.strip(), self.score)
+                            name_to_save = self.name_input_text.strip() if self.name_input_text.strip() else 'Anonymous'
+                            self.save_score(name_to_save, self.score)
                             self.show_name_input = False
                         elif event.key == pygame.K_ESCAPE:
                             self.show_name_input = False

@@ -202,7 +202,7 @@ def run_game(food_count=3, bomb_count=5, trial=False):
 
         play_again = ask_yes_no("Play another round?", default=False)
         if not play_again:
-            print("\nFinal Leaderboard:\n")
+            print("\n🏆 Final Leaderboard:\n")
             if not leaderboard_sorted:
                 print(" (no scores yet)")
             else:
